@@ -21,77 +21,190 @@ function createInvestmentScene() {
   const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
   keyLight.position.set(-3, 4, 5);
   scene.add(keyLight);
-  const greenLight = new THREE.PointLight(0xee0033, 16, 12);
-  greenLight.position.set(3, -1, 3);
-  scene.add(greenLight);
-  const coralLight = new THREE.PointLight(0xffffff, 9, 10);
-  coralLight.position.set(-3, -2, 2);
-  scene.add(coralLight);
+  const redLight = new THREE.PointLight(0xee0033, 5, 9);
+  redLight.position.set(3, -1, 3);
+  scene.add(redLight);
+  const fillLight = new THREE.PointLight(0xffffff, 7, 10);
+  fillLight.position.set(-3, -2, 2);
+  scene.add(fillLight);
 
   const instrument = new THREE.Group();
   scene.add(instrument);
 
-  const core = new THREE.Mesh(
-    new THREE.SphereGeometry(1.42, 72, 56),
-    new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0.08, roughness: 0.36, clearcoat: 0.95, clearcoatRoughness: 0.16 })
-  );
-  instrument.add(core);
+  const earthRadius = 1.43;
+  const earthAxis = new THREE.Group();
+  earthAxis.rotation.z = THREE.MathUtils.degToRad(23.5);
+  instrument.add(earthAxis);
+  const earthGroup = new THREE.Group();
+  earthAxis.add(earthGroup);
 
-  const grid = new THREE.Mesh(
-    new THREE.SphereGeometry(1.445, 28, 20),
-    new THREE.MeshBasicMaterial({ color: 0xee0033, wireframe: true, transparent: true, opacity: 0.2 })
-  );
-  instrument.add(grid);
-
-  const orbitSpecs = [
-    { color: 0xee0033, rotation: [0.9, 0.16, 0.3], radius: 1.85, tube: 0.012 },
-    { color: 0xffffff, rotation: [1.28, 0.75, -0.4], radius: 2.05, tube: 0.008 },
-    { color: 0x929aa5, rotation: [0.08, -0.72, 1.1], radius: 1.72, tube: 0.009 }
+  const mapCanvas = document.createElement('canvas');
+  mapCanvas.width = 1024;
+  mapCanvas.height = 512;
+  const mapContext = mapCanvas.getContext('2d');
+  mapContext.fillStyle = '#ffffff';
+  mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+  const continents = [
+    [[-168, 70], [-150, 64], [-137, 58], [-130, 49], [-124, 42], [-117, 32], [-108, 29], [-101, 22], [-91, 18], [-84, 10], [-78, 8], [-76, 20], [-82, 27], [-80, 34], [-73, 40], [-66, 47], [-60, 54], [-72, 60], [-91, 68], [-111, 72], [-134, 72], [-151, 68]],
+    [[-53, 60], [-43, 59], [-35, 70], [-42, 82], [-55, 84], [-62, 76]],
+    [[-81, 12], [-70, 10], [-62, 5], [-52, -2], [-45, -13], [-49, -25], [-55, -37], [-66, -55], [-73, -46], [-77, -29], [-80, -10]],
+    [[-10, 36], [-9, 44], [-2, 51], [8, 55], [17, 60], [28, 70], [47, 72], [61, 66], [78, 72], [99, 69], [120, 58], [139, 53], [157, 60], [176, 53], [165, 43], [145, 39], [132, 32], [122, 21], [114, 7], [103, 1], [96, 12], [86, 20], [76, 8], [68, 24], [55, 26], [45, 14], [39, 28], [30, 33], [23, 38], [15, 45], [5, 43], [-2, 36]],
+    [[-17, 35], [2, 37], [18, 33], [31, 30], [39, 16], [50, 11], [48, -10], [40, -24], [31, -34], [18, -35], [9, -21], [2, -5], [-6, 5], [-14, 15]],
+    [[112, -11], [129, -10], [145, -16], [154, -27], [148, -39], [132, -44], [116, -34], [113, -23]],
+    [[47, -13], [50, -16], [49, -25], [45, -25], [44, -18]]
   ];
-  orbitSpecs.forEach(({ color, rotation, radius, tube }) => {
-    const orbit = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, tube, 8, 180),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
-    );
-    orbit.rotation.set(...rotation);
-    instrument.add(orbit);
+  const mapX = (longitude) => ((longitude + 180) / 360) * mapCanvas.width;
+  const mapY = (latitude) => ((90 - latitude) / 180) * mapCanvas.height;
+  mapContext.fillStyle = '#e2e5e9';
+  mapContext.strokeStyle = '#d2d6dc';
+  mapContext.lineWidth = 2;
+  continents.forEach((polygon) => {
+    mapContext.beginPath();
+    polygon.forEach(([longitude, latitude], index) => {
+      const x = mapX(longitude);
+      const y = mapY(latitude);
+      if (index === 0) mapContext.moveTo(x, y);
+      else mapContext.lineTo(x, y);
+    });
+    mapContext.closePath();
+    mapContext.fill();
+    mapContext.stroke();
   });
+  const earthTexture = new THREE.CanvasTexture(mapCanvas);
+  earthTexture.colorSpace = THREE.SRGBColorSpace;
 
-  const chartPoints = [
-    [-2.45, -0.28, 0.48], [-1.95, -0.02, 0.45], [-1.55, -0.18, 0.43],
-    [-1.13, 0.18, 0.4], [-0.73, 0.06, 0.37], [-0.3, 0.42, 0.34],
-    [0.1, 0.27, 0.3], [0.5, 0.72, 0.28], [0.9, 0.57, 0.24],
-    [1.32, 0.95, 0.19], [1.76, 0.82, 0.15], [2.18, 1.2, 0.1]
-  ].map(([x, y, z]) => new THREE.Vector3(x, y, z));
-  const chartLine = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(chartPoints),
-    new THREE.LineBasicMaterial({ color: 0xee0033, transparent: true, opacity: 0.85 })
+  const earth = new THREE.Mesh(
+    new THREE.SphereGeometry(earthRadius, 96, 64),
+    new THREE.MeshPhysicalMaterial({ map: earthTexture, roughness: 0.72, metalness: 0.02, clearcoat: 0.2 })
   );
-  instrument.add(chartLine);
+  earthGroup.add(earth);
 
-  const pointGeometry = new THREE.SphereGeometry(0.038, 12, 12);
-  chartPoints.forEach((point, index) => {
-    const marker = new THREE.Mesh(
-      pointGeometry,
-      new THREE.MeshBasicMaterial({ color: index === chartPoints.length - 1 ? 0x1e2329 : 0xee0033 })
+  const coordinatesToVector = (latitude, longitude, radius) => {
+    const lat = THREE.MathUtils.degToRad(latitude);
+    const lon = THREE.MathUtils.degToRad(longitude);
+    return new THREE.Vector3(
+      radius * Math.cos(lat) * Math.sin(lon),
+      radius * Math.sin(lat),
+      radius * Math.cos(lat) * Math.cos(lon)
     );
-    marker.position.copy(point);
-    instrument.add(marker);
+  };
+  const gridMaterial = new THREE.LineBasicMaterial({ color: 0xee0033, transparent: true, opacity: 0.48, depthWrite: false });
+  for (let longitude = -180; longitude < 180; longitude += 15) {
+    const points = [];
+    for (let latitude = -87; latitude <= 87; latitude += 3) {
+      points.push(coordinatesToVector(latitude, longitude, earthRadius + 0.012));
+    }
+    earthGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), gridMaterial));
+  }
+  for (let latitude = -75; latitude <= 75; latitude += 15) {
+    const points = [];
+    for (let longitude = -180; longitude < 180; longitude += 3) {
+      points.push(coordinatesToVector(latitude, longitude, earthRadius + 0.012));
+    }
+    earthGroup.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points), gridMaterial));
+  }
+
+  const locations = [
+    { latitude: 40.7128, longitude: -74.006, city: 'NEW YORK', asset: 'BTC' },
+    { latitude: 51.5072, longitude: -0.1276, city: 'LONDON', asset: 'ETH' },
+    { latitude: 1.3521, longitude: 103.8198, city: 'SINGAPORE', asset: 'SOL' },
+    { latitude: 35.6762, longitude: 139.6503, city: 'TOKYO', asset: 'XRP' }
+  ];
+  const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xee0033 });
+  const markerGeometry = new THREE.SphereGeometry(0.055, 20, 16);
+  locations.forEach(({ latitude, longitude, city, asset }) => {
+    const surfacePoint = coordinatesToVector(latitude, longitude, earthRadius + 0.035);
+    const outward = surfacePoint.clone().normalize();
+    const labelPoint = coordinatesToVector(latitude, longitude, earthRadius + 0.31);
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.copy(surfacePoint);
+    earthGroup.add(marker);
+
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 8, 36), markerMaterial);
+    ring.position.copy(surfacePoint);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), outward);
+    earthGroup.add(ring);
+
+    const callout = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([surfacePoint, labelPoint]),
+      new THREE.LineBasicMaterial({ color: 0xee0033, transparent: true, opacity: 0.8 })
+    );
+    earthGroup.add(callout);
+
+    const labelCanvas = document.createElement('canvas');
+    labelCanvas.width = 320;
+    labelCanvas.height = 112;
+    const labelContext = labelCanvas.getContext('2d');
+    labelContext.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    labelContext.strokeStyle = '#ee0033';
+    labelContext.lineWidth = 5;
+    labelContext.beginPath();
+    labelContext.roundRect(4, 4, 312, 104, 20);
+    labelContext.fill();
+    labelContext.stroke();
+    labelContext.textAlign = 'center';
+    labelContext.fillStyle = '#ee0033';
+    labelContext.font = '700 46px sans-serif';
+    labelContext.fillText(asset, 160, 57);
+    labelContext.fillStyle = '#474d57';
+    labelContext.font = '700 17px sans-serif';
+    labelContext.fillText(city, 160, 86);
+
+    const labelTexture = new THREE.CanvasTexture(labelCanvas);
+    labelTexture.colorSpace = THREE.SRGBColorSpace;
+    const labelSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: labelTexture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
+    }));
+    labelSprite.position.copy(labelPoint);
+    labelSprite.scale.set(0.82, 0.287, 1);
+    earthGroup.add(labelSprite);
   });
 
-  const starPositions = new Float32Array(240 * 3);
-  for (let index = 0; index < 240; index += 1) {
-    const radius = 2.55 + Math.random() * 1.7;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    starPositions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    starPositions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-    starPositions[index * 3 + 2] = radius * Math.cos(phi);
-  }
-  const starsGeometry = new THREE.BufferGeometry();
-  starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-  const stars = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ color: 0x929aa5, size: 0.018, transparent: true, opacity: 0.68 }));
-  scene.add(stars);
+  const moonCanvas = document.createElement('canvas');
+  moonCanvas.width = 256;
+  moonCanvas.height = 128;
+  const moonContext = moonCanvas.getContext('2d');
+  moonContext.fillStyle = '#d9dce1';
+  moonContext.fillRect(0, 0, moonCanvas.width, moonCanvas.height);
+  const moonCraters = [
+    [44, 39, 16], [92, 73, 24], [151, 36, 19], [204, 81, 25],
+    [228, 27, 11], [32, 103, 9], [137, 101, 12], [181, 65, 8]
+  ];
+  moonCraters.forEach(([x, y, radius]) => {
+    const gradient = moonContext.createRadialGradient(x - radius * 0.25, y - radius * 0.25, radius * 0.12, x, y, radius);
+    gradient.addColorStop(0, '#c4c8ce');
+    gradient.addColorStop(0.72, '#d2d5da');
+    gradient.addColorStop(1, '#b8bdc5');
+    moonContext.fillStyle = gradient;
+    moonContext.beginPath();
+    moonContext.arc(x, y, radius, 0, Math.PI * 2);
+    moonContext.fill();
+  });
+  const moonTexture = new THREE.CanvasTexture(moonCanvas);
+  moonTexture.colorSpace = THREE.SRGBColorSpace;
+
+  const moonOrbitRadius = 1.92;
+  const moonOrbitPoints = Array.from({ length: 96 }, (_, index) => {
+    const angle = (index / 96) * Math.PI * 2;
+    return new THREE.Vector3(Math.cos(angle) * moonOrbitRadius, 0, Math.sin(angle) * moonOrbitRadius);
+  });
+  const moonOrbit = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(moonOrbitPoints),
+    new THREE.LineBasicMaterial({ color: 0xb7bdc6, transparent: true, opacity: 0.55 })
+  );
+  earthAxis.add(moonOrbit);
+
+  const moonPivot = new THREE.Group();
+  earthAxis.add(moonPivot);
+  const moon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.19, 40, 32),
+    new THREE.MeshStandardMaterial({ map: moonTexture, roughness: 0.95, metalness: 0 })
+  );
+  moon.position.set(moonOrbitRadius, 0, 0);
+  moonPivot.add(moon);
 
   const pointer = { x: 0, y: 0 };
   const onPointerMove = (event) => {
@@ -114,11 +227,13 @@ function createInvestmentScene() {
   const animate = () => {
     const elapsed = clock.getElapsedTime();
     if (!reducedMotion) {
-      instrument.rotation.y = elapsed * 0.1 + pointer.x;
-      instrument.rotation.x = Math.sin(elapsed * 0.22) * 0.035 + pointer.y;
-      stars.rotation.y = elapsed * 0.012;
+      earthGroup.rotation.y = elapsed * 0.1 + pointer.x;
+      moonPivot.rotation.y = elapsed * 0.065;
+      instrument.rotation.y = pointer.x * 0.12;
+      instrument.rotation.x = pointer.y * 0.12;
     } else {
-      instrument.rotation.y = 0.12;
+      earthGroup.rotation.y = 0.12;
+      moonPivot.rotation.y = 0.3;
     }
     renderer.render(scene, camera);
     if (!reducedMotion) requestAnimationFrame(animate);
