@@ -8,13 +8,14 @@
     <title>Electro Bear — Crypto Gold Invest</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="./src/style.css" rel="stylesheet" />
     <script type="importmap">
       { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
     </script>
   </head>
   <body>
+    <canvas id="stardust-scene" aria-hidden="true"></canvas>
     <div id="app">
       <header class="site-header">
         <a class="brand" href="#home" aria-label="Electro Bear, về đầu trang">
@@ -35,6 +36,9 @@
       </header>
 
       <main>
+        <div class="earth-backdrop" aria-hidden="true">
+          <canvas id="investment-scene"></canvas>
+        </div>
         <section class="hero section-wrap" id="home" aria-labelledby="hero-title">
           <div class="hero-copy">
             <p class="eyebrow"><span class="eyebrow-dot"></span> ĐẦU TƯ, THEO CÁCH CỦA BẠN</p>
@@ -47,18 +51,13 @@
             <div class="hero-note"><span class="note-line"></span><span>Kiến thức trước. Quyết định sau.</span></div>
           </div>
 
-          <div class="hero-art" aria-label="Quả địa cầu tài sản crypto 3D tương tác">
-            <canvas id="investment-scene" aria-hidden="true"></canvas>
-            <div class="art-label art-label-top"><span class="signal-dot"></span><span>BẢN ĐỒ TÀI SẢN<br /><strong>Thị trường toàn cầu</strong></span></div>
-            <div class="art-orbit-caption" aria-hidden="true">GLOBAL CRYPTO ASSET MAP</div>
-          </div>
         </section>
 
         <section class="qr-section section-wrap" id="qr" aria-labelledby="qr-title">
           <div class="qr-intro">
             <p class="eyebrow">KẾT NỐI VỚI BINANCE</p>
             <h2 id="qr-title">Quét mã để<br /><em>bắt đầu.</em></h2>
-            <p>Hai mã QR dẫn đến cùng một trang Binance. Chọn mục bạn muốn khám phá.</p>
+            <p>Hai mã QR là 2 phong cách khác nhau. Chọn mục bạn muốn khám phá.</p>
           </div>
           <div class="qr-grid">
             <article class="qr-card">
@@ -76,8 +75,8 @@
                 <img src="./qr_spot.png" alt="Mã QR Binance Spot" width="132" height="132" />
               </a>
               <div class="qr-detail">
-                <div class="qr-heading"><span class="qr-index qr-index-coral">02</span><h3>Spot</h3></div>
-                <p>Tìm hiểu giao dịch giao ngay và cách tự nghiên cứu tài sản trước khi quyết định.</p>
+                <div class="qr-heading"><span class="qr-index qr-index-coral">02</span><h3>Đầu tư dài hạn</h3></div>
+                <p>Đầu tư chắc chắn vào các tài sản vốn hóa lớn, nằm trong danh sách ETF, danh mục bền vững.</p>
                 <div class="qr-link-row"><a href="https://app.binance.com/en/qr/dplkef58290ea86d46fda82817acb7c7690e" target="_blank" rel="noreferrer">app.binance.com/en/qr/…</a><button class="copy-link" type="button" data-copy-link="https://app.binance.com/en/qr/dplkef58290ea86d46fda82817acb7c7690e" aria-label="Sao chép liên kết Binance Spot" title="Sao chép liên kết"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="9" height="10" rx="1.5"></rect><path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v8A1.5 1.5 0 0 0 4.5 14H7"></path></svg></button></div>
               </div>
             </article>
@@ -85,19 +84,9 @@
           <p class="qr-footnote"><span aria-hidden="true">↗</span> Mỗi mã mở liên kết tương ứng. Hãy kiểm tra kỹ nội dung giao dịch trước khi xác nhận.</p>
         </section>
 
-        <section class="market-strip" aria-label="Thông tin minh họa">
-          <div class="section-wrap market-inner">
-            <span class="market-caption"><span class="market-live-dot"></span> BẢNG TIN MINH HỌA</span>
-            <div class="market-item"><span>VN-INDEX</span><strong>Góc nhìn dài hạn</strong></div>
-            <div class="market-item"><span>BTC / USDT</span><strong>Biến động cao</strong></div>
-            <div class="market-item"><span>QUẢN TRỊ RỦI RO</span><strong>Luôn ưu tiên</strong></div>
-            <span class="market-disclaimer">Không phải dữ liệu thời gian thực</span>
-          </div>
-        </section>
-
         <section class="content-section section-wrap entertainment-section" id="entertainment" aria-labelledby="entertainment-title">
           <div class="section-heading">
-            <div><p class="eyebrow">HỌC MÀ CHƠI</p><h2 id="entertainment-title">Giải trí <em>có ích.</em></h2></div>
+            <div><p class="eyebrow">GIẢI TRÍ</p><h2 id="entertainment-title">Giải trí <em> nâng cao kiến thức.</em></h2></div>
             <p>Một câu hỏi nhỏ để thử cách bạn phản ứng trước biến động thị trường.</p>
           </div>
           <div class="quiz-layout">

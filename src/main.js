@@ -2,13 +2,85 @@ import * as THREE from 'three';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function createInvestmentScene() {
-  const canvas = document.querySelector('#investment-scene');
+function createStardust() {
+  const canvas = document.querySelector('#stardust-scene');
+  const context = canvas?.getContext('2d');
+  if (!canvas || !context) return;
+
+  const particles = [];
+  let width = 0;
+  let height = 0;
+  let pixelRatio = 1;
+  let previousTime = 0;
+
+  const resize = () => {
+    pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.round(width * pixelRatio);
+    canvas.height = Math.round(height * pixelRatio);
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+    const count = Math.min(110, Math.max(44, Math.round((width * height) / 11500)));
+    particles.length = 0;
+    for (let index = 0; index < count; index += 1) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: 0.65 + Math.random() * 1.8,
+        speed: 9 + Math.random() * 23,
+        drift: (Math.random() - 0.5) * 7,
+        color: Math.random() < 0.05 ? '#ee0033' : '#ffffff',
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  };
+
+  const render = (time = 0) => {
+    const delta = previousTime ? Math.min((time - previousTime) / 1000, 0.05) : 0;
+    previousTime = time;
+    context.clearRect(0, 0, width, height);
+    context.globalAlpha = 0.3;
+
+    particles.forEach((particle) => {
+      if (!reducedMotion) {
+        particle.y -= particle.speed * delta;
+        particle.x += particle.drift * delta;
+        particle.phase += delta * 1.4;
+        if (particle.y < -4) {
+          particle.y = height + 4;
+          particle.x = Math.random() * width;
+        }
+        if (particle.x < -4) particle.x = width + 4;
+        if (particle.x > width + 4) particle.x = -4;
+      }
+
+      context.beginPath();
+      context.fillStyle = particle.color;
+      context.shadowColor = particle.color === '#ffffff' ? 'rgba(70, 78, 88, 0.42)' : 'rgba(238, 0, 51, 0.35)';
+      context.shadowBlur = particle.radius * 2.5;
+      context.arc(particle.x, particle.y + Math.sin(particle.phase) * 1.5, particle.radius, 0, Math.PI * 2);
+      context.fill();
+    });
+
+    context.globalAlpha = 1;
+    context.shadowBlur = 0;
+    if (!reducedMotion) requestAnimationFrame(render);
+  };
+
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+  render();
+}
+
+createStardust();
+
+function createInvestmentScene(canvas) {
   if (!canvas) return;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 7.4);
+  camera.position.set(0, 0, 5.2);
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
@@ -38,44 +110,9 @@ function createInvestmentScene() {
   const earthGroup = new THREE.Group();
   earthAxis.add(earthGroup);
 
-  const mapCanvas = document.createElement('canvas');
-  mapCanvas.width = 1024;
-  mapCanvas.height = 512;
-  const mapContext = mapCanvas.getContext('2d');
-  mapContext.fillStyle = '#ffffff';
-  mapContext.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
-  const continents = [
-    [[-168, 70], [-150, 64], [-137, 58], [-130, 49], [-124, 42], [-117, 32], [-108, 29], [-101, 22], [-91, 18], [-84, 10], [-78, 8], [-76, 20], [-82, 27], [-80, 34], [-73, 40], [-66, 47], [-60, 54], [-72, 60], [-91, 68], [-111, 72], [-134, 72], [-151, 68]],
-    [[-53, 60], [-43, 59], [-35, 70], [-42, 82], [-55, 84], [-62, 76]],
-    [[-81, 12], [-70, 10], [-62, 5], [-52, -2], [-45, -13], [-49, -25], [-55, -37], [-66, -55], [-73, -46], [-77, -29], [-80, -10]],
-    [[-10, 36], [-9, 44], [-2, 51], [8, 55], [17, 60], [28, 70], [47, 72], [61, 66], [78, 72], [99, 69], [120, 58], [139, 53], [157, 60], [176, 53], [165, 43], [145, 39], [132, 32], [122, 21], [114, 7], [103, 1], [96, 12], [86, 20], [76, 8], [68, 24], [55, 26], [45, 14], [39, 28], [30, 33], [23, 38], [15, 45], [5, 43], [-2, 36]],
-    [[-17, 35], [2, 37], [18, 33], [31, 30], [39, 16], [50, 11], [48, -10], [40, -24], [31, -34], [18, -35], [9, -21], [2, -5], [-6, 5], [-14, 15]],
-    [[112, -11], [129, -10], [145, -16], [154, -27], [148, -39], [132, -44], [116, -34], [113, -23]],
-    [[47, -13], [50, -16], [49, -25], [45, -25], [44, -18]]
-  ];
-  const mapX = (longitude) => ((longitude + 180) / 360) * mapCanvas.width;
-  const mapY = (latitude) => ((90 - latitude) / 180) * mapCanvas.height;
-  mapContext.fillStyle = '#e2e5e9';
-  mapContext.strokeStyle = '#d2d6dc';
-  mapContext.lineWidth = 2;
-  continents.forEach((polygon) => {
-    mapContext.beginPath();
-    polygon.forEach(([longitude, latitude], index) => {
-      const x = mapX(longitude);
-      const y = mapY(latitude);
-      if (index === 0) mapContext.moveTo(x, y);
-      else mapContext.lineTo(x, y);
-    });
-    mapContext.closePath();
-    mapContext.fill();
-    mapContext.stroke();
-  });
-  const earthTexture = new THREE.CanvasTexture(mapCanvas);
-  earthTexture.colorSpace = THREE.SRGBColorSpace;
-
   const earth = new THREE.Mesh(
     new THREE.SphereGeometry(earthRadius, 96, 64),
-    new THREE.MeshPhysicalMaterial({ map: earthTexture, roughness: 0.72, metalness: 0.02, clearcoat: 0.2 })
+    new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, roughness: 0.72, metalness: 0.02, clearcoat: 0.2 })
   );
   earthGroup.add(earth);
 
@@ -89,13 +126,6 @@ function createInvestmentScene() {
     );
   };
   const gridMaterial = new THREE.LineBasicMaterial({ color: 0xee0033, transparent: true, opacity: 0.48, depthWrite: false });
-  for (let longitude = -180; longitude < 180; longitude += 15) {
-    const points = [];
-    for (let latitude = -87; latitude <= 87; latitude += 3) {
-      points.push(coordinatesToVector(latitude, longitude, earthRadius + 0.012));
-    }
-    earthGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), gridMaterial));
-  }
   for (let latitude = -75; latitude <= 75; latitude += 15) {
     const points = [];
     for (let longitude = -180; longitude < 180; longitude += 3) {
@@ -104,63 +134,42 @@ function createInvestmentScene() {
     earthGroup.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points), gridMaterial));
   }
 
-  const locations = [
-    { latitude: 40.7128, longitude: -74.006, city: 'NEW YORK', asset: 'BTC' },
-    { latitude: 51.5072, longitude: -0.1276, city: 'LONDON', asset: 'ETH' },
-    { latitude: 1.3521, longitude: 103.8198, city: 'SINGAPORE', asset: 'SOL' },
-    { latitude: 35.6762, longitude: 139.6503, city: 'TOKYO', asset: 'XRP' }
+  const assetLocations = [
+    { latitude: 40.7128, longitude: -74.006, asset: 'USD', symbol: '$' },
+    { latitude: 1.3521, longitude: 103.8198, asset: 'BTC', symbol: '\u20bf' },
+    { latitude: 51.5072, longitude: -0.1276, asset: 'ETH', symbol: '\u039e' }
   ];
-  const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xee0033 });
-  const markerGeometry = new THREE.SphereGeometry(0.055, 20, 16);
-  locations.forEach(({ latitude, longitude, city, asset }) => {
-    const surfacePoint = coordinatesToVector(latitude, longitude, earthRadius + 0.035);
-    const outward = surfacePoint.clone().normalize();
-    const labelPoint = coordinatesToVector(latitude, longitude, earthRadius + 0.31);
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    marker.position.copy(surfacePoint);
-    earthGroup.add(marker);
+  const createAssetBadge = (asset, symbol) => {
+    const badgeCanvas = document.createElement('canvas');
+    badgeCanvas.width = 256;
+    badgeCanvas.height = 256;
+    const context = badgeCanvas.getContext('2d');
+    context.fillStyle = '#ee0033';
+    context.font = '700 108px "Segoe UI Symbol", "Arial Unicode MS", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(symbol, 128, 105);
 
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 8, 36), markerMaterial);
-    ring.position.copy(surfacePoint);
-    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), outward);
-    earthGroup.add(ring);
+    context.fillStyle = '#474d57';
+    context.font = '700 24px sans-serif';
+    context.textBaseline = 'alphabetic';
+    context.fillText(asset, 128, 238);
 
-    const callout = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([surfacePoint, labelPoint]),
-      new THREE.LineBasicMaterial({ color: 0xee0033, transparent: true, opacity: 0.8 })
-    );
-    earthGroup.add(callout);
-
-    const labelCanvas = document.createElement('canvas');
-    labelCanvas.width = 320;
-    labelCanvas.height = 112;
-    const labelContext = labelCanvas.getContext('2d');
-    labelContext.fillStyle = 'rgba(255, 255, 255, 0.96)';
-    labelContext.strokeStyle = '#ee0033';
-    labelContext.lineWidth = 5;
-    labelContext.beginPath();
-    labelContext.roundRect(4, 4, 312, 104, 20);
-    labelContext.fill();
-    labelContext.stroke();
-    labelContext.textAlign = 'center';
-    labelContext.fillStyle = '#ee0033';
-    labelContext.font = '700 46px sans-serif';
-    labelContext.fillText(asset, 160, 57);
-    labelContext.fillStyle = '#474d57';
-    labelContext.font = '700 17px sans-serif';
-    labelContext.fillText(city, 160, 86);
-
-    const labelTexture = new THREE.CanvasTexture(labelCanvas);
-    labelTexture.colorSpace = THREE.SRGBColorSpace;
-    const labelSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: labelTexture,
+    const texture = new THREE.CanvasTexture(badgeCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texture,
       transparent: true,
       depthTest: true,
       depthWrite: false
     }));
-    labelSprite.position.copy(labelPoint);
-    labelSprite.scale.set(0.82, 0.287, 1);
-    earthGroup.add(labelSprite);
+  };
+
+  assetLocations.forEach(({ latitude, longitude, asset, symbol }) => {
+    const badge = createAssetBadge(asset, symbol);
+    badge.position.copy(coordinatesToVector(latitude, longitude, earthRadius + 0.08));
+    badge.scale.set(0.3, 0.3, 1);
+    earthGroup.add(badge);
   });
 
   const moonCanvas = document.createElement('canvas');
@@ -218,8 +227,16 @@ function createInvestmentScene() {
     const { width, height } = canvas.getBoundingClientRect();
     if (!width || !height) return;
     camera.aspect = width / height;
+    const globeDiameter = Math.max(700, width * 0.7);
+    camera.position.z = (earthRadius * height) / (globeDiameter * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
+
+    const canvasTop = canvas.getBoundingClientRect().top;
+    const targetCenter = canvasTop + globeDiameter / 2;
+    const canvasCenter = canvasTop + height / 2;
+    const viewHeight = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    instrument.position.y = ((canvasCenter - targetCenter) * viewHeight) / height;
   });
   resizeObserver.observe(canvas);
 
@@ -241,7 +258,23 @@ function createInvestmentScene() {
   animate();
 }
 
-createInvestmentScene();
+createInvestmentScene(document.querySelector('#investment-scene'));
+
+const earthBackdrop = document.querySelector('.earth-backdrop');
+const mainElement = document.querySelector('main');
+const entertainmentSection = document.querySelector('#entertainment');
+const resizeEarthBackdrop = () => {
+  if (!earthBackdrop || !mainElement || !entertainmentSection) return;
+  const mainTop = mainElement.getBoundingClientRect().top;
+  const entertainmentBottom = entertainmentSection.getBoundingClientRect().bottom;
+  const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 0;
+  earthBackdrop.style.height = `${Math.max(0, Math.ceil(entertainmentBottom - mainTop + headerHeight))}px`;
+};
+resizeEarthBackdrop();
+const earthBackdropObserver = new ResizeObserver(resizeEarthBackdrop);
+if (mainElement) earthBackdropObserver.observe(mainElement);
+if (entertainmentSection) earthBackdropObserver.observe(entertainmentSection);
+window.addEventListener('resize', resizeEarthBackdrop, { passive: true });
 
 const menuToggle = document.querySelector('.menu-toggle');
 const mainNav = document.querySelector('.main-nav');
